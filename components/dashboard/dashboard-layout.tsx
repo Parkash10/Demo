@@ -37,6 +37,7 @@ const sidebarItems = [
   { icon: Upload, label: "My Uploads", href: "/dashboard/uploads" },
   { icon: Trophy, label: "Leaderboard", href: "/dashboard/leaderboard" },
   { icon: User, label: "Profile", href: "/profile" },
+  { icon: Shield, label: "Approvals", href: "/dashboard/approvals" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ]
 

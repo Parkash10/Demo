@@ -10,6 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail, Lock, User, Building2, ArrowRight, Loader2, Github, Chrome, Check, X } from "lucide-react"
+import { useUser } from "@/lib/contexts/user-context"
+import { useUserApproval } from "@/lib/contexts/user-approval-context"
+import { useGroup } from "@/lib/contexts/group-context"
+import { toast } from "sonner"
 
 const universityDomains = ["edu", "ac.uk", "edu.au", "ac.in", "edu.cn", "uni.de"]
 
@@ -20,8 +24,16 @@ const passwordRequirements = [
   { label: "One number", test: (p: string) => /\d/.test(p) },
 ]
 
-export function SignUpForm() {
+interface SignUpFormProps {
+  initialGroupId?: string | null
+  tempUserId: string
+}
+
+export function SignUpForm({ initialGroupId = null, tempUserId }: SignUpFormProps) {
   const router = useRouter()
+  const { setUser } = useUser()
+  const { addPendingUser } = useUserApproval()
+  const { addMemberToGroup } = useGroup()
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -73,7 +85,60 @@ export function SignUpForm() {
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    // Create user object
+    const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const now = new Date().toISOString()
+
+    const newUser = {
+      id: userId,
+      fullName: formData.fullName,
+      email: formData.email,
+      university: formData.university,
+      groupId: initialGroupId,
+      status: "pending" as const,
+      createdAt: now,
+      stats: {
+        notesUploaded: 0,
+        totalDownloads: 0,
+        avgRating: 0,
+        followers: 0,
+        profileViews: 0,
+        likesReceived: 0,
+      },
+    }
+
+    // Save user to localStorage (all users)
+    const allUsers = localStorage.getItem("allUsers")
+    const users = allUsers ? JSON.parse(allUsers) : []
+    users.push(newUser)
+    localStorage.setItem("allUsers", JSON.stringify(users))
+
+    // Add to pending users for approval
+    addPendingUser({
+      id: userId,
+      fullName: formData.fullName,
+      email: formData.email,
+      university: formData.university,
+      groupId: initialGroupId,
+      status: "pending",
+      createdAt: now,
+      requestedAt: now,
+    })
+
+    // Add user to group if they joined one
+    if (initialGroupId) {
+      addMemberToGroup(initialGroupId, userId)
+    }
+
+    // Set as current user (they can use the app but with pending status)
+    setUser(newUser)
+
+    toast.success("Account created! Waiting for approval from existing members.")
+    
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    
+    // Redirect based on approval status
     router.push("/dashboard")
   }
 
