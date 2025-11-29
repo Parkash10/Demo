@@ -24,7 +24,7 @@ const contentData = [
   { day: "Sun", uploads: 134, approvals: 112, rejections: 9 },
 ]
 
-export function AdminCharts(): JSX.Element {
+export function AdminCharts() {
   return (
     <div className="space-y-6">
       {/* User Growth */}
